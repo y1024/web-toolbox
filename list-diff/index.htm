@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="一个极致丝滑、支持暗黑模式的列表对比工具。支持 A/B 列表差异分析、自动去重、查询日志自动分类存储及长文本自动换行，离线可用。">
+    <meta name="keywords" content="列表对比,文本去重,差异分析,List Diff,在线对比工具,文本处理">
+    <meta name="author" content="Gemini Thought Partner">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>List Diff Pro</title>
+    <style>
+        :root {
+            --primary-color: #007aff;
+            --success-color: #34c759;
+            --danger-color: #ff3b30;
+            --warning-color: #ffcc00;
+            --bg-color: #f2f2f7;
+            --card-bg: #ffffff;
+            --text-main: #1c1c1e;
+            --text-secondary: #8e8e93;
+            --input-bg: #f9f9fb;
+            --border-color: #e5e5ea;
+            --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #000000;
+            --card-bg: #1c1c1e;
+            --text-main: #f2f2f7;
+            --text-secondary: #aeaeb2;
+            --input-bg: #2c2c2e;
+            --border-color: #38383a;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-main);
+            transition: background-color 0.4s ease;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .theme-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 输入区 */
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .box {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        textarea {
+            width: 100%;
+            height: 180px;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-family: ui-monospace, monospace;
+            font-size: 14px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            outline: none;
+            resize: none;
+        }
+
+        /* 按钮 */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 30px 0;
+        }
+
+        .btn {
+            border: none;
+            padding: 16px 32px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s var(--ease-out-expo);
+        }
+
+        .btn-compare {
+            background: var(--primary-color);
+            color: white;
+            flex: 2;
+            box-shadow: 0 8px 20px rgba(0, 122, 255, 0.3);
+        }
+
+        .btn-reset {
+            background: var(--input-bg);
+            color: var(--danger-color);
+            border: 1px solid var(--border-color);
+            flex: 1;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 结果展示修复（处理长文本换行） */
+        #results-container {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .result-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            border-top: 5px solid var(--primary-color);
+            opacity: 0;
+            transform: translateY(20px) scale(0.98);
+            transition: 0.6s var(--ease-out-expo);
+        }
+
+        .result-card.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .result-list {
+            height: 180px;
+            overflow-y: auto;
+            background: var(--input-bg);
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 13px;
+            margin-top: 10px;
+            line-height: 1.6;
+            color: var(--text-main);
+            /* --- 核心修复：长文本自动换行 --- */
+            white-space: pre-wrap;
+            word-break: break-all;
+            overflow-wrap: break-word;
+        }
+
+        /* 日志区域 */
+        .history-section {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px dashed var(--border-color);
+        }
+
+        .date-group-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin: 20px 0 10px 5px;
+            display: flex;
+            align-items: center;
+        }
+
+        .date-group-title::before {
+            content: "";
+            width: 4px;
+            height: 14px;
+            background: var(--primary-color);
+            border-radius: 2px;
+            margin-right: 8px;
+        }
+
+        .history-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .history-item:hover {
+            border-color: var(--primary-color);
+            transform: translateX(4px);
+        }
+
+        .delete-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: #ff3b3015;
+            color: var(--danger-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .delete-btn:hover {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .label-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .copy-chip {
+            background: var(--input-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        #toast {
+            position: fixed;
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--text-main);
+            color: var(--card-bg);
+            padding: 10px 24px;
+            border-radius: 40px;
+            transition: 0.4s var(--ease-out-expo);
+            z-index: 2000;
+        }
+
+        #toast.active {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        @media (max-width: 600px) {
+
+            .input-grid,
+            #results-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body data-theme="light">
+
+    <div class="container">
+        <div class="header">
+            <h1 style="margin:0">List Diff</h1>
+            <button class="theme-toggle" onclick="toggleTheme()"><span id="theme-icon">🌙</span></button>
+        </div>
+
+        <div class="input-grid">
+            <div class="box">
+                <div class="label-bar">列表 A <span id="cnt-a-in">0</span></div>
+                <textarea id="list-a" placeholder="在此输入列表 A..."></textarea>
+            </div>
+            <div class="box">
+                <div class="label-bar">列表 B <span id="cnt-b-in">0</span></div>
+                <textarea id="list-b" placeholder="在此输入列表 B..."></textarea>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-reset" onclick="resetAll()">清空</button>
+            <button class="btn btn-compare" onclick="runComparison()">立即对比并存档</button>
+        </div>
+
+        <div id="results-container">
+            <div class="result-card" style="border-top-color: var(--danger-color)">
+                <div class="label-bar">仅在 A 中 <button class="copy-chip" onclick="copyDiv('res-a')">复制</button></div>
+                <div id="res-a" class="result-list"></div>
+            </div>
+            <div class="result-card" style="border-top-color: var(--success-color)">
+                <div class="label-bar">仅在 B 中 <button class="copy-chip" onclick="copyDiv('res-b')">复制</button></div>
+                <div id="res-b" class="result-list"></div>
+            </div>
+            <div class="result-card" style="border-top-color: var(--warning-color)">
+                <div class="label-bar">两者共有 <button class="copy-chip" onclick="copyDiv('res-com')">复制</button></div>
+                <div id="res-com" class="result-list"></div>
+            </div>
+            <div class="result-card" style="border-top-color: #af52de">
+                <div class="label-bar">合并去重 <button class="copy-chip" onclick="copyDiv('res-merge')">复制</button></div>
+                <div id="res-merge" class="result-list"></div>
+            </div>
+        </div>
+
+        <div class="history-section">
+            <div class="label-bar">查询日志</div>
+            <div id="history-container"></div>
+        </div>
+    </div>
+
+    <div id="toast">操作成功</div>
+
+    <script>
+        // 初始化
+        (function init() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', theme);
+            document.getElementById('theme-icon').innerText = theme === 'dark' ? '☀️' : '🌙';
+            renderHistory();
+        })();
+
+        function toggleTheme() {
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            const next = isDark ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', next);
+            document.getElementById('theme-icon').innerText = isDark ? '🌙' : '☀️';
+            localStorage.setItem('theme', next);
+        }
+
+        function runComparison(isAuto = false) {
+            const aTxt = document.getElementById('list-a').value;
+            const bTxt = document.getElementById('list-b').value;
+            if (!aTxt && !bTxt) return;
+
+            const a = aTxt.split('\n').map(l => l.trim()).filter(Boolean);
+            const b = bTxt.split('\n').map(l => l.trim()).filter(Boolean);
+
+            const setA = new Set(a), setB = new Set(b);
+            fill('res-a', a.filter(x => !setB.has(x)));
+            fill('res-b', b.filter(x => !setA.has(x)));
+            fill('res-com', a.filter(x => setB.has(x)));
+            fill('res-merge', [...new Set([...a, ...b])]);
+
+            document.getElementById('cnt-a-in').innerText = a.length;
+            document.getElementById('cnt-b-in').innerText = b.length;
+
+            document.getElementById('results-container').style.display = 'grid';
+            document.querySelectorAll('.result-card').forEach((c, i) => {
+                c.classList.remove('show');
+                setTimeout(() => c.classList.add('show'), i * 100);
+            });
+
+            if (!isAuto) {
+                saveHistory(aTxt, bTxt);
+                setTimeout(() => {
+                    const target = document.getElementById('results-container').getBoundingClientRect().top + window.pageYOffset - 30;
+                    smoothScroll(target, 800);
+                }, 100);
+            }
+        }
+
+        function saveHistory(a, b) {
+            let logs = JSON.parse(localStorage.getItem('diff_logs') || '[]');
+            if (logs.length > 0 && logs[0].a === a && logs[0].b === b) return;
+
+            const now = new Date();
+            logs.unshift({
+                id: Date.now(),
+                date: now.toLocaleDateString(),
+                fullTime: now.toLocaleString(),
+                a, b,
+                summary: `对比记录: A(${a.split('\n').filter(Boolean).length}行) vs B(${b.split('\n').filter(Boolean).length}行)`
+            });
+
+            localStorage.setItem('diff_logs', JSON.stringify(logs.slice(0, 30)));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const logs = JSON.parse(localStorage.getItem('diff_logs') || '[]');
+            const container = document.getElementById('history-container');
+            if (!logs.length) { container.innerHTML = '<div style="text-align:center;color:gray;padding:20px;font-size:12px">暂无日志</div>'; return; }
+
+            const groups = {};
+            const today = new Date().toLocaleDateString();
+            const yesterday = new Date(Date.now() - 86400000).toLocaleDateString();
+
+            logs.forEach(log => {
+                if (!groups[log.date]) groups[log.date] = [];
+                groups[log.date].push(log);
+            });
+
+            let html = '';
+            for (const date in groups) {
+                let label = (date === today) ? '今天' : (date === yesterday ? '昨天' : date);
+                html += `<div class="date-group-title">${label}</div>`;
+                html += groups[date].map(item => `
+                <div class="history-item" onclick="restore('${item.id}')">
+                    <div style="flex:1">
+                        <div class="history-preview">${item.summary}</div>
+                        <div class="history-time">${item.fullTime}</div>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <div class="copy-chip">载入</div>
+                        <button class="delete-btn" onclick="deleteLog(event, '${item.id}')">×</button>
+                    </div>
+                </div>
+            `).join('');
+            }
+            container.innerHTML = html;
+        }
+
+        function deleteLog(e, id) {
+            e.stopPropagation();
+            if (!confirm("确定删除这条日志？")) return;
+            let logs = JSON.parse(localStorage.getItem('diff_logs') || '[]');
+            localStorage.setItem('diff_logs', JSON.stringify(logs.filter(l => l.id != id)));
+            renderHistory();
+            showToast("已删除");
+        }
+
+        function restore(id) {
+            const logs = JSON.parse(localStorage.getItem('diff_logs') || '[]');
+            const log = logs.find(l => l.id == id);
+            if (log) {
+                document.getElementById('list-a').value = log.a;
+                document.getElementById('list-b').value = log.b;
+                runComparison(true);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                showToast("记录已恢复");
+            }
+        }
+
+        function fill(id, data) { document.getElementById(id).innerText = data.join('\n'); }
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg; t.classList.add('active');
+            setTimeout(() => t.classList.remove('active'), 2000);
+        }
+        function copyDiv(id) {
+            navigator.clipboard.writeText(document.getElementById(id).innerText);
+            showToast("复制成功");
+        }
+        function resetAll() {
+            if (!confirm("确定清空输入内容？")) return;
+            document.getElementById('list-a').value = '';
+            document.getElementById('list-b').value = '';
+            document.querySelectorAll('.result-card').forEach(c => c.classList.remove('show'));
+        }
+        function smoothScroll(target, duration) {
+            const start = window.pageYOffset;
+            const diff = target - start;
+            let startTime = null;
+            function step(now) {
+                if (!startTime) startTime = now;
+                const p = Math.min((now - startTime) / duration, 1);
+                window.scrollTo(0, start + diff * (1 - Math.pow(1 - p, 4)));
+                if (p < 1) requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+        }
+    </script>
+</body>
+
+</html>
