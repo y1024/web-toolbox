@@ -61,6 +61,70 @@
             margin-bottom: 25px;
         }
 
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* 智能转换开关样式 */
+        .setting-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            background: var(--card-bg);
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 34px;
+            height: 20px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border-color);
+            transition: .4s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--success-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(14px);
+        }
+
         .theme-toggle {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -282,7 +346,6 @@
             border-color: var(--primary-color);
         }
 
-        /* --- 优化后的说明栏样式 --- */
         .info-footer {
             margin-top: 60px;
             margin-bottom: 40px;
@@ -342,10 +405,15 @@
         }
 
         @media (max-width: 600px) {
-
             .input-grid,
             #results-container {
                 grid-template-columns: 1fr;
+            }
+            .header-actions {
+                gap: 8px;
+            }
+            .setting-item span {
+                display: none;
             }
         }
     </style>
@@ -356,7 +424,16 @@
     <div class="container">
         <div class="header">
             <h1 style="margin:0">List Diff</h1>
-            <button class="theme-toggle" onclick="toggleTheme()"><span id="theme-icon">🌙</span></button>
+            <div class="header-actions">
+                <div class="setting-item">
+                    <span>数字转换</span>
+                    <label class="switch">
+                        <input type="checkbox" id="convert-switch" onchange="toggleConversion()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <button class="theme-toggle" onclick="toggleTheme()"><span id="theme-icon">🌙</span></button>
+            </div>
         </div>
 
         <div class="input-grid">
@@ -364,7 +441,7 @@
                 <div class="label-bar">
                     <span>列表 A (<span id="cnt-a-in">0</span>)</span>
                     <div class="btn-group">
-                        <button class="copy-chip" title="复制为 JSON 数组（自动识别数字类型）"
+                        <button class="copy-chip" title="复制为 JSON 数组"
                             onclick="copyAsJson('list-a')">JSON</button>
                     </div>
                 </div>
@@ -374,7 +451,7 @@
                 <div class="label-bar">
                     <span>列表 B (<span id="cnt-b-in">0</span>)</span>
                     <div class="btn-group">
-                        <button class="copy-chip" title="复制为 JSON 数组（自动识别数字类型）"
+                        <button class="copy-chip" title="复制为 JSON 数组"
                             onclick="copyAsJson('list-b')">JSON</button>
                     </div>
                 </div>
@@ -442,7 +519,7 @@
                 <span>💡</span> JSON 按钮使用说明
             </div>
             <div class="info-footer-content">
-                点击按钮将文本转为数组并自动复制。系统将智能识别类型：纯数字行转为 <b>Number</b>，非数字行保留为 <b>String</b>。
+                点击按钮将文本转为数组并复制。开启上方 <b>数字转换</b> 后，系统将智能识别：纯数字行转为 Number 类型。
             </div>
         </footer>
     </div>
@@ -450,10 +527,18 @@
     <div id="toast">操作成功</div>
 
     <script>
+        // 增加转换状态管理
+        let smartTypeConversion = false;
+
         (function init() {
             const theme = localStorage.getItem('theme') || 'light';
             document.body.setAttribute('data-theme', theme);
             document.getElementById('theme-icon').innerText = theme === 'dark' ? '☀️' : '🌙';
+
+            // 加载转换设置
+            smartTypeConversion = localStorage.getItem('smart_conv') === 'true';
+            document.getElementById('convert-switch').checked = smartTypeConversion;
+
             renderHistory();
         })();
 
@@ -463,6 +548,13 @@
             document.body.setAttribute('data-theme', next);
             document.getElementById('theme-icon').innerText = isDark ? '🌙' : '☀️';
             localStorage.setItem('theme', next);
+        }
+
+        // 切换转换逻辑
+        function toggleConversion() {
+            smartTypeConversion = document.getElementById('convert-switch').checked;
+            localStorage.setItem('smart_conv', smartTypeConversion);
+            showToast(smartTypeConversion ? "数字智能转换已开启" : "数字转换已关闭 (纯字符)");
         }
 
         function updateCounts() {
@@ -585,13 +677,16 @@
                 .map(line => line.trim())
                 .filter(line => line.length > 0)
                 .map(item => {
-                    const isNumber = /^-?\d+(\.\d+)?$/.test(item);
-                    return isNumber ? Number(item) : item;
+                    if (smartTypeConversion) {
+                        const isNumber = /^-?\d+(\.\d+)?$/.test(item);
+                        return isNumber ? Number(item) : item;
+                    }
+                    return item; // 默认不进行转换
                 });
 
             const jsonStr = JSON.stringify(arr);
             navigator.clipboard.writeText(jsonStr).then(() => {
-                showToast("已复制智能 JSON 数组");
+                showToast(smartTypeConversion ? "已复制智能 JSON 数组" : "已复制纯字符串 JSON 数组");
             });
         }
 
