@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Toolbox - 个人效率工具箱</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #0f172a;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e2e8f0;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        .tag {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e40af;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 999px;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            width: fit-content;
+        }
+
+        .card h2 {
+            margin: 0 0 1rem 0;
+            font-size: 1.5rem;
+        }
+
+        .card p {
+            color: #475569;
+            line-height: 1.6;
+            flex-grow: 1;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            padding: 0.8rem 1.2rem;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #1d4ed8;
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 2rem;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Web Toolbox</h1>
+        <p class="subtitle">个人专属效率工具集合</p>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <span class="tag">静态工具</span>
+            <h2>List Diff 对比工具</h2>
+            <p>快速对比两组文本列表的差异（新增、删除、共有内容）。完全本地运行，保护隐私。</p>
+            <a href="https://y1024.github.io/web-toolbox/list-diff/" target="_blank" class="btn">立即使用</a>
+        </div>
+
+        <div class="card">
+            <span class="tag">Python / Streamlit</span>
+            <h2>Excel 动态合并工具</h2>
+            <p>基于单号关联两个 Excel 文件。支持动态选择关联列和同步字段，自动化处理物流跟踪数据。</p>
+            <a href="https://toolbox-excel-merge.streamlit.app/" target="_blank" class="btn">立即使用</a>
+        </div>
+    </div>
+
+    <footer>
+        &copy; 2025 y1024 / Web Toolbox. Built with ❤️
+    </footer>
+
+</body>
+
+</html>
