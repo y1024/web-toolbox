@@ -73,7 +73,6 @@
             justify-content: center;
         }
 
-        /* 输入区 */
         .input-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -102,7 +101,6 @@
             resize: none;
         }
 
-        /* 按钮 */
         .controls {
             display: flex;
             justify-content: center;
@@ -138,7 +136,6 @@
             transform: scale(0.95);
         }
 
-        /* 结果展示修复（处理长文本换行） */
         #results-container {
             display: none;
             grid-template-columns: 1fr 1fr;
@@ -171,15 +168,13 @@
             margin-top: 10px;
             line-height: 1.6;
             color: var(--text-main);
-            /* --- 核心修复：长文本自动换行 --- */
             white-space: pre-wrap;
             word-break: break-all;
             overflow-wrap: break-word;
         }
 
-        /* 日志区域 */
         .history-section {
-            margin-top: 50px;
+            margin-top: 40px;
             padding-top: 20px;
             border-top: 1px dashed var(--border-color);
         }
@@ -242,20 +237,90 @@
         .label-bar {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             margin-bottom: 8px;
             font-size: 13px;
             font-weight: 600;
             color: var(--text-secondary);
         }
 
+        .btn-group {
+            display: flex;
+            gap: 4px;
+        }
+
         .copy-chip {
             background: var(--input-bg);
             color: var(--text-main);
             border: 1px solid var(--border-color);
-            padding: 4px 10px;
-            border-radius: 12px;
+            padding: 4px 8px;
+            border-radius: 8px;
             font-size: 11px;
             cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+        }
+
+        .copy-chip[title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 6px;
+            white-space: nowrap;
+            font-size: 11px;
+            z-index: 10;
+        }
+
+        .copy-chip:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* --- 优化后的说明栏样式 --- */
+        .info-footer {
+            margin-top: 60px;
+            margin-bottom: 40px;
+            padding: 24px;
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid var(--border-color);
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        [data-theme="dark"] .info-footer {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .info-footer-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .info-footer-content {
+            font-size: 12px;
+            color: var(--text-secondary);
+            opacity: 0.8;
+            line-height: 1.6;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .info-footer b {
+            color: var(--primary-color);
+            font-weight: 600;
         }
 
         #toast {
@@ -269,6 +334,7 @@
             border-radius: 40px;
             transition: 0.4s var(--ease-out-expo);
             z-index: 2000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         #toast.active {
@@ -295,12 +361,24 @@
 
         <div class="input-grid">
             <div class="box">
-                <div class="label-bar">列表 A <span id="cnt-a-in">0</span></div>
-                <textarea id="list-a" placeholder="在此输入列表 A..."></textarea>
+                <div class="label-bar">
+                    <span>列表 A (<span id="cnt-a-in">0</span>)</span>
+                    <div class="btn-group">
+                        <button class="copy-chip" title="复制为 JSON 数组（自动识别数字类型）"
+                            onclick="copyAsJson('list-a')">JSON</button>
+                    </div>
+                </div>
+                <textarea id="list-a" placeholder="在此输入列表 A..." oninput="updateCounts()"></textarea>
             </div>
             <div class="box">
-                <div class="label-bar">列表 B <span id="cnt-b-in">0</span></div>
-                <textarea id="list-b" placeholder="在此输入列表 B..."></textarea>
+                <div class="label-bar">
+                    <span>列表 B (<span id="cnt-b-in">0</span>)</span>
+                    <div class="btn-group">
+                        <button class="copy-chip" title="复制为 JSON 数组（自动识别数字类型）"
+                            onclick="copyAsJson('list-b')">JSON</button>
+                    </div>
+                </div>
+                <textarea id="list-b" placeholder="在此输入列表 B..." oninput="updateCounts()"></textarea>
             </div>
         </div>
 
@@ -311,19 +389,45 @@
 
         <div id="results-container">
             <div class="result-card" style="border-top-color: var(--danger-color)">
-                <div class="label-bar">仅在 A 中 <button class="copy-chip" onclick="copyDiv('res-a')">复制</button></div>
+                <div class="label-bar">
+                    仅在 A 中
+                    <div class="btn-group">
+                        <button class="copy-chip" title="复制为 JSON 数组" onclick="copyAsJson('res-a', true)">JSON</button>
+                        <button class="copy-chip" onclick="copyDiv('res-a')">复制</button>
+                    </div>
+                </div>
                 <div id="res-a" class="result-list"></div>
             </div>
             <div class="result-card" style="border-top-color: var(--success-color)">
-                <div class="label-bar">仅在 B 中 <button class="copy-chip" onclick="copyDiv('res-b')">复制</button></div>
+                <div class="label-bar">
+                    仅在 B 中
+                    <div class="btn-group">
+                        <button class="copy-chip" title="复制为 JSON 数组" onclick="copyAsJson('res-b', true)">JSON</button>
+                        <button class="copy-chip" onclick="copyDiv('res-b')">复制</button>
+                    </div>
+                </div>
                 <div id="res-b" class="result-list"></div>
             </div>
             <div class="result-card" style="border-top-color: var(--warning-color)">
-                <div class="label-bar">两者共有 <button class="copy-chip" onclick="copyDiv('res-com')">复制</button></div>
+                <div class="label-bar">
+                    两者共有
+                    <div class="btn-group">
+                        <button class="copy-chip" title="复制为 JSON 数组"
+                            onclick="copyAsJson('res-com', true)">JSON</button>
+                        <button class="copy-chip" onclick="copyDiv('res-com')">复制</button>
+                    </div>
+                </div>
                 <div id="res-com" class="result-list"></div>
             </div>
             <div class="result-card" style="border-top-color: #af52de">
-                <div class="label-bar">合并去重 <button class="copy-chip" onclick="copyDiv('res-merge')">复制</button></div>
+                <div class="label-bar">
+                    合并去重
+                    <div class="btn-group">
+                        <button class="copy-chip" title="复制为 JSON 数组"
+                            onclick="copyAsJson('res-merge', true)">JSON</button>
+                        <button class="copy-chip" onclick="copyDiv('res-merge')">复制</button>
+                    </div>
+                </div>
                 <div id="res-merge" class="result-list"></div>
             </div>
         </div>
@@ -332,12 +436,20 @@
             <div class="label-bar">查询日志</div>
             <div id="history-container"></div>
         </div>
+
+        <footer class="info-footer">
+            <div class="info-footer-title">
+                <span>💡</span> JSON 按钮使用说明
+            </div>
+            <div class="info-footer-content">
+                点击按钮将文本转为数组并自动复制。系统将智能识别类型：纯数字行转为 <b>Number</b>，非数字行保留为 <b>String</b>。
+            </div>
+        </footer>
     </div>
 
     <div id="toast">操作成功</div>
 
     <script>
-        // 初始化
         (function init() {
             const theme = localStorage.getItem('theme') || 'light';
             document.body.setAttribute('data-theme', theme);
@@ -351,6 +463,13 @@
             document.body.setAttribute('data-theme', next);
             document.getElementById('theme-icon').innerText = isDark ? '🌙' : '☀️';
             localStorage.setItem('theme', next);
+        }
+
+        function updateCounts() {
+            const a = document.getElementById('list-a').value.split('\n').filter(l => l.trim()).length;
+            const b = document.getElementById('list-b').value.split('\n').filter(l => l.trim()).length;
+            document.getElementById('cnt-a-in').innerText = a;
+            document.getElementById('cnt-b-in').innerText = b;
         }
 
         function runComparison(isAuto = false) {
@@ -367,8 +486,7 @@
             fill('res-com', a.filter(x => setB.has(x)));
             fill('res-merge', [...new Set([...a, ...b])]);
 
-            document.getElementById('cnt-a-in').innerText = a.length;
-            document.getElementById('cnt-b-in').innerText = b.length;
+            updateCounts();
 
             document.getElementById('results-container').style.display = 'grid';
             document.querySelectorAll('.result-card').forEach((c, i) => {
@@ -395,7 +513,7 @@
                 date: now.toLocaleDateString(),
                 fullTime: now.toLocaleString(),
                 a, b,
-                summary: `对比记录: A(${a.split('\n').filter(Boolean).length}行) vs B(${b.split('\n').filter(Boolean).length}行)`
+                summary: `对比: A(${a.split('\n').filter(Boolean).length}) vs B(${b.split('\n').filter(Boolean).length})`
             });
 
             localStorage.setItem('diff_logs', JSON.stringify(logs.slice(0, 30)));
@@ -423,8 +541,8 @@
                 html += groups[date].map(item => `
                 <div class="history-item" onclick="restore('${item.id}')">
                     <div style="flex:1">
-                        <div class="history-preview">${item.summary}</div>
-                        <div class="history-time">${item.fullTime}</div>
+                        <div style="font-size:13px">${item.summary}</div>
+                        <div style="font-size:11px; color:var(--text-secondary)">${item.fullTime}</div>
                     </div>
                     <div style="display:flex; gap:8px; align-items:center;">
                         <div class="copy-chip">载入</div>
@@ -458,21 +576,46 @@
         }
 
         function fill(id, data) { document.getElementById(id).innerText = data.join('\n'); }
+
+        function copyAsJson(elementId, isDiv = false) {
+            const el = document.getElementById(elementId);
+            const text = isDiv ? el.innerText : el.value;
+
+            const arr = text.split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0)
+                .map(item => {
+                    const isNumber = /^-?\d+(\.\d+)?$/.test(item);
+                    return isNumber ? Number(item) : item;
+                });
+
+            const jsonStr = JSON.stringify(arr);
+            navigator.clipboard.writeText(jsonStr).then(() => {
+                showToast("已复制智能 JSON 数组");
+            });
+        }
+
+        function copyDiv(id) {
+            navigator.clipboard.writeText(document.getElementById(id).innerText);
+            showToast("复制成功");
+        }
+
         function showToast(msg) {
             const t = document.getElementById('toast');
             t.innerText = msg; t.classList.add('active');
             setTimeout(() => t.classList.remove('active'), 2000);
         }
-        function copyDiv(id) {
-            navigator.clipboard.writeText(document.getElementById(id).innerText);
-            showToast("复制成功");
-        }
+
         function resetAll() {
             if (!confirm("确定清空输入内容？")) return;
             document.getElementById('list-a').value = '';
             document.getElementById('list-b').value = '';
+            document.getElementById('cnt-a-in').innerText = '0';
+            document.getElementById('cnt-b-in').innerText = '0';
+            document.getElementById('results-container').style.display = 'none';
             document.querySelectorAll('.result-card').forEach(c => c.classList.remove('show'));
         }
+
         function smoothScroll(target, duration) {
             const start = window.pageYOffset;
             const diff = target - start;
